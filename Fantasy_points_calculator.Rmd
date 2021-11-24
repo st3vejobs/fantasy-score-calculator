@@ -1,0 +1,365 @@
+---
+title: "Fantasy Score Calculator"
+author: "Shane Hylton"
+date: "11/22/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Important Note
+
+These functions take a vector of values that represent the stats of an individual player and they return the player's score for the game. The functions are designed to convert the data to a data frame, then perform the manipulation on the dataframe. They can accept data frames as inputs as well. The data frame provided must contain variable names in columns and players must be represented by rows. 
+
+The individual position functions are great for quick calculations. the dataframe function at the end is great for computing an entire team's score. It is a more involved process, loading the data manually. It would be wise to first put the data in a .csv and load it into R.
+
+## Running Backs
+
+Note that this function does not compute QB stats for RBs. If a RB throws a pass, the RB function will need to be combined with the QB function for a full statistic. 
+The scoring settings are custom to my Coaches' Corner fantasy league. 
+
+```{r}
+
+library(tidyverse)
+
+rb <- function(x){
+  df <- data.frame(rbind(x))
+  colnames(df) <- c('rush_yd', 'rush_tds', 'rec', 'rec_yd', 'rec_tds', 'fum', 'fum_l', 'two_pt', 'ret_yds', 'ret_td')
+  
+  score <- df$rush_yd/10 + df$rush_tds*6 + df$rec*1 + df$rec_yd/10 + df$rec_tds*6 - df$fum*1 - df$fum_l*2 + df$two_pt*2 + df$ret_yds*0 + df$ret_td*6
+  return(score)
+}
+
+saquon <- c(25, 0, 6, 31, 0, 0, 0, 0, 0, 0)
+rb(saquon)
+
+```
+
+## Quarterbacks 
+
+
+```{r}
+qb <- function(x){
+  df <- data.frame(rbind(x))
+  colnames(df) <- c('p_yd', 'p_td', 'int', 'rush_yd', 'rush_tds', 'fum', 'fum_l', 'two_pt')
+  
+  score <- df$p_yd/25 + df$p_td*4 - df$int*2 + df$rush_yd/10 + df$rush_tds*6 - df$fum*1 - df$fum_l*2 + df$two_pt*2
+  return(score)
+}
+
+cam <- c(189, 2, 0, 46, 1, 0, 0, 0)
+
+qb(cam)
+
+```
+
+## Wide Receivers 
+
+
+```{r}
+wr <- function(x){
+  df <- data.frame(rbind(x))
+  colnames(df) <- c('rec', 'rec_yd', 'rec_tds', 'rush_yd', 'rush_tds', 'fum', 'fum_l', 'two_pt', 'ret_yds', 'ret_td')
+  
+  score <- df$rush_yd/10 + df$rush_tds*6 + df$rec*1 + df$rec_yd/10 + df$rec_tds*6 - df$fum*1 - df$fum_l*2 + df$two_pt*2 + df$ret_yds*0 + df$ret_td*6
+  return(score)
+}
+
+tyreek <- c(9, 77, 0, 33, 0, 0, 0, 0, 0, 0)
+
+wr(tyreek)
+
+```
+
+
+## Tight Ends 
+
+This is the same code as the wide receiver function. Use them interchangeably.
+
+```{r}
+
+te <- function(x){
+  df <- data.frame(rbind(x))
+  colnames(df) <- c('rec', 'rec_yd', 'rec_tds', 'rush_yd', 'rush_tds', 'fum', 'fum_l', 'two_pt', 'ret_yd', 'ret_td')
+  
+  score <- df$rush_yd/10 + df$rush_tds*6 + df$rec*1 + df$rec_yd/10 + df$rec_tds*6 - df$fum*1 - df$fum_l*2 + df$two_pt*2 + df$ret_yd*0 + df$ret_td*6
+  return(score)
+}
+
+dawson <- c(6, 80, 0, 0, 0, 0, 0, 0, 0, 0)
+
+te(dawson)
+
+```
+
+## Kickers
+
+```{r}
+k <- function(x){
+  df <- data.frame(rbind(x))
+  colnames(df) <- c('made_39', 'made_49', 'made_50', 'made_pat', 'miss', 'miss_pat')
+  
+  score <- df$made_39*3 + df$made_49*4 + df$made_50*5 + df$made_pat*1 - df$miss*1 - df$miss_pat*1
+  return(score)
+}
+
+robbie <- c(1, 2, 0, 3, 0, 0)
+
+k(robbie)
+```
+
+## Defense
+
+If yards are not factored into the points calculation, use def()
+
+If yards are part of the points calculation, use def_yds()
+
+Include defensive and special teams touchdowns in the 'td' column.
+
+```{r}
+
+def <- function(x){
+  df <- data.frame(rbind(x))
+  colnames(df) <- c('pts_allow', 'sacks', 'int', 'fum_f', 'fum_r', 'td', 'blk_kick', 'safety', 'two_pt_ret')
+  score <- 0
+  if (df$pts_allow == 0){
+    score <- score + 10
+  }
+  if (df$pts_allow >= 1 & df$pts_allow <= 6){
+    score <- score + 7
+  }
+  if (df$pts_allow >= 7 & df$pts_allow <= 13){
+    score <- score + 4
+  }
+  if (df$pts_allow >= 14 & df$pts_allow <= 20){
+    score <- score + 1
+  }
+  if (df$pts_allow >= 21 & df$pts_allow <= 27){
+    score <- score + 0
+  }
+  if (df$pts_allow >= 28 & df$pts_allow <= 34){
+    score <- score -1
+  }
+  if (df$pts_allow >= 35){
+    score <- score -4
+  }
+  
+  stats <- df$sacks*1 + df$int*2 + df$fum_f*1 + df$fum_r*2 + df$td*6 + df$blk_kick*2 + df$safety*2 + df$two_pt_ret*2
+  final <- score + stats
+  return(final)
+}
+
+
+def_yds <- function(x){
+  df <- data.frame(rbind(x))
+  colnames(df) <- c('pts_allow', 'yds_allow', 'sacks', 'int', 'fum_f', 'fum_r', 'td', 'blk_kick', 'safety', 'two_pt_ret')
+  
+  score <- 0
+  if (df$pts_allow == 0){
+    score <- score + 10
+  }
+  if (df$pts_allow >= 1 & df$pts_allow <= 6){
+    score <- score + 7
+  }
+  if (df$pts_allow >= 7 & df$pts_allow <= 13){
+    score <- score + 4
+  }
+  if (df$pts_allow >= 14 & df$pts_allow <= 20){
+    score <- score + 1
+  }
+  if (df$pts_allow >= 21 & df$pts_allow <= 27){
+    score <- score + 0
+  }
+  if (df$pts_allow >= 28 & df$pts_allow <= 34){
+    score <- score -1
+  }
+  if (df$pts_allow >= 35){
+    score <- score -4
+  }
+  yds <- 0
+  if (df$yds_allow < 100){
+    yds <- yds + 10
+  }
+  if (df$yds_allow >= 100 & df$yds_allow <= 199){
+    yds <- yds + 5
+  }
+  if (df$yds_allow >= 200 & df$yds_allow <= 299){
+    yds <- yds + 0
+  }
+  if (df$yds_allow >= 200 & df$yds_allow <= 399){
+    yds <- yds + 0
+  }
+  if (df$yds_allow >=  400 & df$yds_allow <= 449){
+    yds <- yds -2
+  }
+  if (df$yds_allow >= 450 & df$yds_allow <= 499){
+    yds <- yds - 5
+  }
+  if (df$yds_allow > 500){
+    yds <- yds - 5
+  }
+  
+  stats <- df$sacks*1 + df$int*2 + df$fum_f*1 + df$fum_r*2 + df$td*6 + df$blk_kick*2 + df$safety*2 + df$two_pt_ret*2
+  final <- score + stats + yds
+  return(final)
+}
+
+bucs <- c(10, 2, 2, 1, 1, 0, 0, 0, 0)
+def(bucs)
+
+  
+```
+
+## Team Score Calculation
+
+There are two ways to accomplish this: Enter the stats as vectors, use the position function to evaluate, then plug in to team().
+
+OR
+
+Use the team_full() function to evaluate an existing dataframe for the score calculation.
+
+For some reason, this does not work when knitted but it does work in the R console.
+
+
+```{r}
+
+team <- function(x){
+  df <- data.frame(rbind(x))
+  colnames(df) <- c('qb', 'rb', 'rb', 'wr', 'wr', 'te', 'wrt', 'wrt', 'k', 'def')
+  score <- rowSums(df)
+  return(score)
+  }
+
+cam <- c(189, 2, 0, 46, 1, 0, 0, 0)
+saquon <- c(25, 0, 6, 31, 0, 0, 0, 0, 0, 0)
+moss <- c(5,0,0,0,0,0,0,0,0,0)
+tyreek <- c(9, 77, 0, 33, 0, 0, 0, 0, 0, 0)
+dj <- c(5,50,1,0,0,0,0,0,0,0)
+dawson <- c(6, 80, 0, 0, 0, 0, 0, 0, 0, 0)
+darrel <- c(15, 0, 1, 11, 0,0,0,0,0,0)
+godwin <- c(6,65,1,7,0,0,0,0,0,0)
+robbie <- c(1, 2, 0, 3, 0, 0)
+bucs <- c(10, 2, 2, 1, 1, 0, 0, 0, 0)
+
+anton <- c(as.numeric(qb(cam)), as.numeric(rb(saquon)), as.numeric(rb(moss)), as.numeric(wr(tyreek)), as.numeric(wr(dj)), as.numeric(te(dawson)), as.numeric(rb(darrel)), as.numeric(wr(godwin)), as.numeric(k(robbie)), as.numeric(def(bucs)))
+
+anton
+
+team(anton)
+```
+
+
+
+
+## Full Team Calculation using full dataframe
+
+This will be a very wide dataframe with many empty entries.
+I will load a .csv document instead of manually entering the values in R. For this method, it is not sensible to manually enter the values.
+
+I left a comment containing the skeleton for the dataframe if the values were to be entered manually.
+
+It helps to add a column for position. Not mandatory, but useful.
+
+```{r}
+
+#jake <- data.frame(matrix(ncol = 34, nrow = 0))
+
+#colnames(jake) <- c('rush_yd', 'rush_tds', 'rec', 'rec_yd', 'rec_tds', 'fum', 'fum_l', 'two_pt', 'ret_yd', 'ret_td', 'p_yd', 'p_td', 'p_int', 'two_pt_pass', 'made_39', 'made_49', 'made_50', 'made_pat', 'miss', 'miss_pat', 'pts_allow', 'yds_allow', 'sacks', 'def_int', 'fum_f', 'fum_r', 'td', 'blk_kick', 'safety', 'two_pt_ret')
+
+link <- url('https://raw.githubusercontent.com/st3vejobs/fantasy-score-calculator/main/jake_wk11.csv')
+raw <- read.csv(link)
+
+raw[is.na(raw)] <- 0
+
+jake <- raw
+
+colnames(jake) <- c('name', 'rush_yd', 'rush_tds', 'rec', 'rec_yd', 'rec_tds', 'fum', 'fum_l', 'two_pt', 'ret_yd', 'ret_td', 'p_yd', 'p_td', 'p_int', 'two_pt_pass', 'made_39', 'made_49', 'made_50', 'made_pat', 'miss', 'miss_pat', 'pts_allow', 'yds_allow', 'sacks', 'def_int', 'fum_f', 'fum_r', 'td', 'blk_kick', 'safety', 'two_pt_ret')
+
+pos <- c('qb', 'rb', 'rb', 'wr','wr','te','wrt','wrt','k','def')
+
+jake <- jake %>% add_column(pos)
+
+jake <- jake %>% relocate(pos, .after = name)
+
+
+
+team_full <- function(x){
+  df <- x
+  stats <- 0
+  score <- 0
+  for (row in 1:nrow(df)){
+    
+  stats <- stats + df[row, ]$rush_yd/10 + df[row, ]$rush_tds*6 + df[row, ]$rec*1 + df[row, ]$rec_yd/10 + df[row, ]$rec_tds*6 - df[row, ]$fum*1 - df[row, ]$fum_l*1 + df[row, ]$two_pt*2 + df[row, ]$ret_yd*0 + df[row, ]$ret_td*6 + df[row, ]$p_yd/25 + df[row, ]$p_td*4 - df[row, ]$p_int*2 + df[row, ]$made_39*3 + df[row, ]$made_49*4 + df[row, ]$made_50*5 + df[row, ]$made_pat*1 - df[row, ]$miss*1 - df[row, ]$miss_pat*1
+  
+}
+    ##defense
+
+  row <- which(df$pos == 'def')
+  if (df[row, ]$pts_allow == 0){
+    score <- score + 10
+  }
+  if (df[row, ]$pts_allow >= 1 & df[row, ]$pts_allow <= 6){
+    score <- score + 7
+  }
+  if (df[row, ]$pts_allow >= 7 & df[row, ]$pts_allow <= 13){
+    score <- score + 4
+  }
+  if (df[row, ]$pts_allow >= 14 & df[row, ]$pts_allow <= 20){
+    score <- score + 1
+  }
+  if (df[row, ]$pts_allow >= 21 & df[row, ]$pts_allow <= 27){
+    score <- score + 0
+  }
+  if (df[row, ]$pts_allow >= 28 & df[row, ]$pts_allow <= 34){
+    score <- score -1
+  }
+  if (df[row, ]$pts_allow >= 35){
+    score <- score -4
+  }
+  
+  score <- score + df[row, ]$sacks*1 + df[row, ]$def_int*2 + df[row, ]$fum_f*1 + df[row, ]$fum_r*2 + df[row, ]$td*6 + df[row, ]$blk_kick*2 + df[row, ]$safety*2 + df[row, ]$two_pt_ret*2
+  
+  final <- score + stats
+  return(final)
+}
+
+
+team_full(jake)
+for (row in 1:nrow(jake)){
+if(jake[row, ]$pos == 'def'){
+  paste('jake$pos')
+}
+}
+
+
+
+```
+
+
+```{r}
+name <- c('Jake', 'Anton')
+plt <- data.frame(name)
+plt <- cbind(plt,(cbind(c(team_full(jake), team(anton)))))
+colnames(plt) <- c('name','score')
+
+ggplot(plt, aes(x = name, y = score, fill = name))+
+  geom_col()+
+  ylab('Total Score')+
+  xlab('Manager')+
+  ggtitle('Jake vs. Anton')+
+  geom_label(
+    label = plt$score,
+    nudge_x = 0, nudge_y = 7,
+    show.legend = F
+  )+
+
+  theme(plot.title = element_text(hjust = 0.5))
+
+  
+
+
+```
